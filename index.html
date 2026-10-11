@@ -17,20 +17,28 @@
   <div class="browser-window">
     <!-- Tab Bar -->
     <div class="tab-bar">
-      <button class="tab active" id="tab-home" onclick="goTo('home')">
-        <span class="tab-title">🏠 Home</span>
-        <span class="tab-close">×</span>
-      </button>
+      <div class="tab-strip">
+        <button class="tab active" id="tab-home" onclick="goTo('home')">
+          <span class="tab-title">🏠 Home</span>
+          <span class="tab-close">×</span>
+        </button>
 
-      <button class="tab" id="tab-page1" onclick="goTo('page1')">
-        <span class="tab-title">🤖 Captcha Grid</span>
-        <span class="tab-close">×</span>
-      </button>
+        <button class="tab" id="tab-page1" onclick="goTo('page1')">
+          <span class="tab-title">🤖 Captcha Grid</span>
+          <span class="tab-close">×</span>
+        </button>
 
-      <button class="tab" id="tab-page2" onclick="goTo('page2')">
-        <span class="tab-title">🌊 Subpage 2</span>
-        <span class="tab-close">×</span>
-      </button>
+        <button class="tab" id="tab-page2" onclick="goTo('page2')">
+          <span class="tab-title">🌊 Subpage 2</span>
+          <span class="tab-close">×</span>
+        </button>
+      </div>
+
+      <div class="window-controls" aria-label="Window controls">
+        <button class="window-control minimize" aria-label="Minimize" title="Minimize">–</button>
+        <button class="window-control maximize" aria-label="Maximize" title="Maximize">▢</button>
+        <button class="window-control close" aria-label="Close" title="Close">×</button>
+      </div>
     </div>
 
     <!-- Controls & Address Bar -->

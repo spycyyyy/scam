@@ -1,8 +1,23 @@
-const COLS = 5;
-const ROWS = 6;
-const TOTAL_CAPTCHAS = COLS * ROWS; // 30
+const MIN_COLS = 4;
+const GAP = 12;
 const TILE_W = 160;
 const TILE_H = 100;
+let COLS = 5;
+let ROWS = 6;
+let TOTAL_CAPTCHAS = COLS * ROWS; // 30
+
+function getCaptchaGridConfig() {
+  const container = document.getElementById('captcha-view');
+  const availableWidth = Math.max((container ? container.clientWidth : 900) - 32, 0);
+  const cols = Math.max(MIN_COLS, Math.floor((availableWidth + GAP) / (TILE_W + GAP)));
+  const rows = Math.max(4, Math.ceil((window.innerHeight * 0.7) / (TILE_H + GAP)));
+
+  return {
+    cols,
+    rows,
+    total: cols * rows
+  };
+}
 
 const FONTS = [
   "Rubik Glitch",
@@ -24,6 +39,7 @@ const SCRATCH_H = 78;
 let scratchCanvas;
 let scratchCtx;
 let captchaList = [];
+let captchaResizeListenerBound = false;
 
 // --- DISTORTION LIBRARY ---
 const DistortionLibrary = {
@@ -380,27 +396,52 @@ class CaptchaTile {
   }
 }
 
-// Mounted directly into the browser viewport
-function initCaptchaPage() {
-  const container = document.getElementById("captcha-view");
+function rebuildCaptchaGrid() {
+  const container = document.getElementById('captcha-view');
+  if (!container) return;
 
-  const gridContainer = document.createElement("div");
+  const existingGrid = container.querySelector('div');
+  if (existingGrid) {
+    existingGrid.remove();
+  }
+  captchaList = [];
+
+  const { cols, rows, total } = getCaptchaGridConfig();
+  COLS = cols;
+  ROWS = rows;
+  TOTAL_CAPTCHAS = total;
+
+  const gridContainer = document.createElement('div');
   Object.assign(gridContainer.style, {
-    display: "grid",
+    display: 'grid',
     gridTemplateColumns: `repeat(${COLS}, ${TILE_W}px)`,
     gridTemplateRows: `repeat(${ROWS}, auto)`,
-    gap: "12px",
-    boxSizing: "border-box"
+    gap: `${GAP}px`,
+    boxSizing: 'border-box'
   });
   container.appendChild(gridContainer);
 
-  scratchCanvas = document.createElement("canvas");
+  scratchCanvas = document.createElement('canvas');
   scratchCanvas.width = SCRATCH_W;
   scratchCanvas.height = SCRATCH_H;
-  scratchCtx = scratchCanvas.getContext("2d", { willReadFrequently: true });
+  scratchCtx = scratchCanvas.getContext('2d', { willReadFrequently: true });
 
   for (let i = 0; i < TOTAL_CAPTCHAS; i++) {
     captchaList.push(new CaptchaTile(gridContainer, i));
+  }
+}
+
+// Mounted directly into the browser viewport
+function initCaptchaPage() {
+  rebuildCaptchaGrid();
+
+  if (!captchaResizeListenerBound) {
+    captchaResizeListenerBound = true;
+    window.addEventListener('resize', () => {
+      if (document.getElementById('captcha-view') && document.getElementById('captcha-view').style.display !== 'none') {
+        rebuildCaptchaGrid();
+      }
+    });
   }
 }
 

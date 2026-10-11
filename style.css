@@ -15,12 +15,12 @@ body {
 
 /* Browser Window Container */
 .browser-window {
-  width: 95vw;
-  max-width: 980px;
-  height: 90vh;
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
   background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -31,9 +31,19 @@ body {
   background: #dee1e6;
   display: flex;
   align-items: flex-end;
+  flex-wrap: wrap;
   padding: 8px 8px 0 8px;
-  gap: 4px;
+  gap: 8px;
   user-select: none;
+}
+
+.tab-strip {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .tab {
@@ -47,8 +57,9 @@ body {
   background: transparent;
   border: none;
   border-radius: 8px 8px 0 0;
-  min-width: 140px;
+  min-width: 120px;
   max-width: 200px;
+  flex: 1 1 160px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -73,6 +84,50 @@ body {
   font-size: 14px;
   line-height: 1;
   color: #70757a;
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 2px 8px 0;
+  flex: 0 0 auto;
+}
+
+.window-control {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55);
+  opacity: 0.95;
+}
+
+.window-control.minimize {
+  background: #edc75c;
+  color: #7a5600;
+}
+
+.window-control.maximize {
+  background: #73c66d;
+  color: #1d5a2b;
+}
+
+.window-control.close {
+  background: #f26b62;
+  color: #7d1f1d;
+}
+
+.window-control:hover {
+  filter: brightness(0.97);
 }
 
 /* Browser Bar */
@@ -125,9 +180,21 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  overflow-y: auto; /* Allows scrolling the 30-tile captcha matrix */
+  align-items: stretch;
+  overflow-y: auto;
   background: #ffffff;
+}
+
+#captcha-view {
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+#canvas-container {
+  width: 100%;
+  height: 100%;
 }
 
 #home-view {
