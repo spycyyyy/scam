@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Simulation</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Google Fonts for Captcha Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Courier+Prime:wght@700&family=Creepster&family=Montserrat:wght@700&family=Permanent+Marker&family=Playfair+Display:wght@700&family=Press+Start+2P&family=Rubik+Glitch&family=Sedgwick+Ave&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+</head>
+<body>
+
+  <div class="browser-window">
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <button class="tab active" id="tab-home" onclick="goTo('home')">
+        <span class="tab-title">🏠 Home</span>
+        <span class="tab-close">×</span>
+      </button>
+
+      <button class="tab" id="tab-page1" onclick="goTo('page1')">
+        <span class="tab-title">🤖 Captcha Grid</span>
+        <span class="tab-close">×</span>
+      </button>
+
+      <button class="tab" id="tab-page2" onclick="goTo('page2')">
+        <span class="tab-title">🌊 Subpage 2</span>
+        <span class="tab-close">×</span>
+      </button>
+    </div>
+
+    <!-- Controls & Address Bar -->
+    <div class="browser-bar">
+      <button class="nav-btn" id="btn-back" onclick="goBack()" disabled title="Back">‹</button>
+      <button class="nav-btn" disabled title="Forward">›</button>
+      <button class="nav-btn" onclick="reloadCurrentPage()" title="Reload">⟳</button>
+      <div class="address-bar" id="address-bar">https://my-browser.local/home</div>
+    </div>
+
+    <!-- Viewport Container -->
+    <div class="viewport" id="main-viewport">
+      <!-- Main Home Landing -->
+      <div id="home-view">
+        <h2>Web Navigator</h2>
+        <p style="margin: 8px 0 20px; color: #666;">Choose a site to browse:</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button class="action-btn" onclick="goTo('page1')">Open 30-Captcha Matrix</button>
+          <button class="action-btn" onclick="goTo('page2')">Open Subpage 2</button>
+        </div>
+      </div>
+
+      <!-- Captcha Container for Page 1 -->
+      <div id="captcha-view" style="display: none; padding: 24px;"></div>
+
+      <!-- Standard p5 Canvas Container for Page 2 -->
+      <div id="canvas-container" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Load Scripts -->
+  <script src="page1.js"></script>
+  <script src="page2.js"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>
