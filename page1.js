@@ -1,16 +1,125 @@
-const MIN_COLS = 4;
-const GAP = 12;
-const TILE_W = 160;
-const TILE_H = 100;
-let COLS = 5;
-let ROWS = 6;
-let TOTAL_CAPTCHAS = COLS * ROWS; // 30
+const CAPTCHA_CONFIG = {
+  layout: {
+    minCols: 3,
+    minRows: 4,
+    gap: 5,
+    tileWidth: 250,
+    tileHeight: 100,
+    defaultCols: 3,
+    defaultRows: 12,
+    viewportPadding: 32,
+    viewportHeightFactor: 0.7,
+  },
+  canvas: {
+    scratchWidth: 68,
+    scratchHeight: 78,
+  },
+  typing: {
+    initialMinDelay: 200,
+    initialMaxDelay: 2400,
+    characterMinDelay: 270,
+    characterMaxDelay: 270,
+    pauseMinDelay: 0,
+    pauseMaxDelay: 0,
+    errorShakeDuration: 100,
+    resetMinDelay: 300,
+    resetMaxDelay: 300,
+  },
+  distortion: {
+    minMethods: 1,
+    maxMethods: 2,
+    noiseMinCount: 30,
+    noiseMaxCount: 50,
+    lineCount:1,
+  },
+  wordFetch: {
+    maxWords: 30,
+    minWordLength: 3,
+    maxWordLength: 10,
+    allowLowercase: true,
+    allowUppercase: true,
+    allowNumbers: true,
+    allowSymbols: true,
+    symbolSet: "!@#$%^&*",
+    minGeneratedLength: 10,
+    maxGeneratedLength: 20,
+    useRandomTextFallback: true,
+  },
+};
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function buildRandomCharacterPool() {
+  let pool = "";
+
+  if (CAPTCHA_CONFIG.wordFetch.allowUppercase) pool += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  if (CAPTCHA_CONFIG.wordFetch.allowLowercase) pool += "abcdefghijklmnopqrstuvwxyz";
+  if (CAPTCHA_CONFIG.wordFetch.allowNumbers) pool += "0123456789";
+  if (CAPTCHA_CONFIG.wordFetch.allowSymbols) pool += CAPTCHA_CONFIG.wordFetch.symbolSet;
+
+  return pool || "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+}
+
+function randomizeCharacterCase(char) {
+  if (!/[A-Za-z]/.test(char)) return char;
+  return Math.random() < 0.5 ? char.toUpperCase() : char.toLowerCase();
+}
+
+function generateRandomChallengeText(lengthRange = null) {
+  const minLength = CAPTCHA_CONFIG.wordFetch.minGeneratedLength;
+  const maxLength = CAPTCHA_CONFIG.wordFetch.maxGeneratedLength;
+  const pool = buildRandomCharacterPool();
+  const targetLength = lengthRange
+    ? randomInt(lengthRange.min, lengthRange.max)
+    : randomInt(minLength, maxLength);
+
+  let text = "";
+  for (let i = 0; i < targetLength; i++) {
+    const char = pool[randomInt(0, pool.length - 1)];
+    text += randomizeCharacterCase(char);
+  }
+
+  return text;
+}
+
+function randomizeTextValue(rawText) {
+  if (!rawText) return generateRandomChallengeText();
+
+  let cleaned = rawText.replace(/[^A-Za-z0-9]/g, "");
+  if (!cleaned) return generateRandomChallengeText();
+
+  const targetLength = Math.min(
+    Math.max(cleaned.length, CAPTCHA_CONFIG.wordFetch.minGeneratedLength),
+    CAPTCHA_CONFIG.wordFetch.maxGeneratedLength
+  );
+
+  let result = "";
+  for (let i = 0; i < targetLength; i++) {
+    const sourceChar = cleaned[i % cleaned.length] || cleaned[0];
+    const char = Math.random() < 0.25 && CAPTCHA_CONFIG.wordFetch.allowSymbols
+      ? CAPTCHA_CONFIG.wordFetch.symbolSet[randomInt(0, CAPTCHA_CONFIG.wordFetch.symbolSet.length - 1)]
+      : sourceChar;
+    result += randomizeCharacterCase(char);
+  }
+
+  return result;
+}
+
+const MIN_COLS = CAPTCHA_CONFIG.layout.minCols;
+const GAP = CAPTCHA_CONFIG.layout.gap;
+const TILE_W = CAPTCHA_CONFIG.layout.tileWidth;
+const TILE_H = CAPTCHA_CONFIG.layout.tileHeight;
+let COLS = CAPTCHA_CONFIG.layout.defaultCols;
+let ROWS = CAPTCHA_CONFIG.layout.defaultRows;
+let TOTAL_CAPTCHAS = COLS * ROWS;
 
 function getCaptchaGridConfig() {
   const container = document.getElementById('captcha-view');
-  const availableWidth = Math.max((container ? container.clientWidth : 900) - 32, 0);
+  const availableWidth = Math.max((container ? container.clientWidth : 900) - CAPTCHA_CONFIG.layout.viewportPadding, 0);
   const cols = Math.max(MIN_COLS, Math.floor((availableWidth + GAP) / (TILE_W + GAP)));
-  const rows = Math.max(4, Math.ceil((window.innerHeight * 0.7) / (TILE_H + GAP)));
+  const rows = Math.max(CAPTCHA_CONFIG.layout.minRows, Math.ceil((window.innerHeight * CAPTCHA_CONFIG.layout.viewportHeightFactor) / (TILE_H + GAP)));
 
   return {
     cols,
@@ -34,8 +143,8 @@ const FONTS = [
 
 const FALLBACK_WORDS = ["RIVER", "CLIFF", "STONE", "BEACH", "RIDGE", "SHORE", "OCEAN", "PEAK", "VALLEY", "STORM"];
 
-const SCRATCH_W = 68;
-const SCRATCH_H = 78;
+const SCRATCH_W = CAPTCHA_CONFIG.canvas.scratchWidth;
+const SCRATCH_H = CAPTCHA_CONFIG.canvas.scratchHeight;
 let scratchCanvas;
 let scratchCtx;
 let captchaList = [];
@@ -126,7 +235,7 @@ const DistortionLibrary = {
   },
 
   addNoiseDots: (ctx, w, h) => {
-    const count = 30 + Math.floor(Math.random() * 20);
+    const count = CAPTCHA_CONFIG.distortion.noiseMinCount + Math.floor(Math.random() * (CAPTCHA_CONFIG.distortion.noiseMaxCount - CAPTCHA_CONFIG.distortion.noiseMinCount + 1));
     for (let i = 0; i < count; i++) {
       ctx.fillStyle = `hsla(${Math.random() * 360}, 100%, 45%, 0.9)`;
       ctx.beginPath();
@@ -137,7 +246,7 @@ const DistortionLibrary = {
 
   addStrikeLines: (ctx, w, h) => {
     ctx.lineWidth = 2;
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < CAPTCHA_CONFIG.distortion.lineCount; i++) {
       ctx.strokeStyle = `hsla(${Math.random() * 360}, 100%, 40%, 0.85)`;
       ctx.beginPath();
       ctx.moveTo(Math.random() * w, 0);
@@ -188,8 +297,8 @@ class CaptchaTile {
 
     this.input = document.createElement("input");
     this.input.type = "text";
-    this.input.maxLength = 8;
-    this.input.placeholder = "type here";
+    this.input.maxLength = CAPTCHA_CONFIG.wordFetch.maxGeneratedLength;
+    this.input.placeholder = "";
     this.input.autocomplete = "off";
     this.input.spellcheck = false;
 
@@ -200,15 +309,15 @@ class CaptchaTile {
       borderTop: "1px solid #cbd5e1",
       borderRadius: "0px",
       padding: "2px 6px",
-      fontSize: "13px",
+      fontSize: "20px",
       textAlign: "center",
-      textTransform: "uppercase",
-      letterSpacing: "2px",
+      textTransform: "none",
+      letterSpacing: "0.5px",
       outline: "none",
       background: "#ffffff",
       color: "#0f172a",
       boxSizing: "border-box",
-      fontFamily: "monospace, sans-serif"
+      fontFamily: "Arial"
     });
 
     this.box.appendChild(this.canvas);
@@ -216,21 +325,35 @@ class CaptchaTile {
     container.appendChild(this.box);
 
     this.refresh().then(() => {
-      const initialDelay = Math.random() * 2200 + 200;
+      const initialDelay = Math.random() * (CAPTCHA_CONFIG.typing.initialMaxDelay - CAPTCHA_CONFIG.typing.initialMinDelay) + CAPTCHA_CONFIG.typing.initialMinDelay;
       setTimeout(() => this.runAutoTypingLoop(), initialDelay);
     });
   }
 
   async fetchRandomWord() {
     try {
-      const res = await fetch(`https://api.datamuse.com/words?sp=?????&max=30`);
+      const res = await fetch(`https://api.datamuse.com/words?sp=?????&max=${CAPTCHA_CONFIG.wordFetch.maxWords}`);
       const data = await res.json();
-      const candidates = data.map((d) => d.word.toUpperCase()).filter((w) => /^[A-Z]{4,5}$/.test(w));
-      return candidates.length > 0
-        ? candidates[Math.floor(Math.random() * candidates.length)]
+      const candidates = data
+        .map((d) => d.word)
+        .filter((w) => {
+          const cleaned = w.replace(/[^A-Za-z]/g, "");
+          return cleaned.length >= CAPTCHA_CONFIG.wordFetch.minWordLength &&
+            cleaned.length <= CAPTCHA_CONFIG.wordFetch.maxWordLength;
+        });
+
+      if (candidates.length > 0) {
+        const selected = candidates[Math.floor(Math.random() * candidates.length)];
+        return randomizeTextValue(selected);
+      }
+
+      return CAPTCHA_CONFIG.wordFetch.useRandomTextFallback
+        ? generateRandomChallengeText({ min: CAPTCHA_CONFIG.wordFetch.minGeneratedLength, max: CAPTCHA_CONFIG.wordFetch.maxGeneratedLength })
         : FALLBACK_WORDS[Math.floor(Math.random() * FALLBACK_WORDS.length)];
     } catch (e) {
-      return FALLBACK_WORDS[Math.floor(Math.random() * FALLBACK_WORDS.length)];
+      return CAPTCHA_CONFIG.wordFetch.useRandomTextFallback
+        ? generateRandomChallengeText({ min: CAPTCHA_CONFIG.wordFetch.minGeneratedLength, max: CAPTCHA_CONFIG.wordFetch.maxGeneratedLength })
+        : FALLBACK_WORDS[Math.floor(Math.random() * FALLBACK_WORDS.length)];
     }
   }
 
@@ -320,7 +443,7 @@ class CaptchaTile {
 
       const pickedMethods = [...DISTORTION_METHODS]
         .sort(() => 0.5 - Math.random())
-        .slice(0, 3 + Math.floor(Math.random() * 3));
+        .slice(0, CAPTCHA_CONFIG.distortion.minMethods + Math.floor(Math.random() * (CAPTCHA_CONFIG.distortion.maxMethods - CAPTCHA_CONFIG.distortion.minMethods + 1)));
 
       pickedMethods.forEach((method) => method(scratchCtx, cw, ch));
 
@@ -351,11 +474,15 @@ class CaptchaTile {
   }
 
   async runAutoTypingLoop() {
-    const guessLen = this.word.length || (Math.random() > 0.5 ? 5 : 4);
+    const guessLen = this.word.length || randomInt(CAPTCHA_CONFIG.wordFetch.minGeneratedLength, CAPTCHA_CONFIG.wordFetch.maxGeneratedLength);
     let guess = "";
+
     for (let i = 0; i < guessLen; i++) {
-      guess += String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      const pool = buildRandomCharacterPool();
+      const char = pool[randomInt(0, pool.length - 1)];
+      guess += randomizeCharacterCase(char);
     }
+
     if (guess === this.word) guess = "FAIL";
 
     this.input.value = "";
@@ -364,31 +491,33 @@ class CaptchaTile {
 
     for (let char of guess) {
       this.input.value += char;
-      await new Promise((r) => setTimeout(r, Math.random() * 110 + 60));
+      const charDelay = Math.random() * (CAPTCHA_CONFIG.typing.characterMaxDelay - CAPTCHA_CONFIG.typing.characterMinDelay) + CAPTCHA_CONFIG.typing.characterMinDelay;
+      await new Promise((r) => setTimeout(r, charDelay));
     }
 
-    await new Promise((r) => setTimeout(r, Math.random() * 220 + 160));
+    const pauseDelay = Math.random() * (CAPTCHA_CONFIG.typing.pauseMaxDelay - CAPTCHA_CONFIG.typing.pauseMinDelay) + CAPTCHA_CONFIG.typing.pauseMinDelay;
+    await new Promise((r) => setTimeout(r, pauseDelay));
 
     this.box.style.borderColor = "#ef4444";
     this.input.style.borderTopColor = "#ef4444";
     this.box.animate(
       [
         { transform: "translateX(0px)" },
-        { transform: "translateX(-4px)" },
-        { transform: "translateX(4px)" },
-        { transform: "translateX(-4px)" },
-        { transform: "translateX(4px)" },
+        { transform: `translateX(-${4}px)` },
+        { transform: `translateX(${4}px)` },
+        { transform: `translateX(-${4}px)` },
+        { transform: `translateX(${4}px)` },
         { transform: "translateX(0px)" }
       ],
-      { duration: 300, easing: "ease-in-out" }
+      { duration: CAPTCHA_CONFIG.typing.errorShakeDuration, easing: "ease-in-out" }
     );
 
-    await new Promise((r) => setTimeout(r, 340));
+    await new Promise((r) => setTimeout(r, CAPTCHA_CONFIG.typing.errorShakeDuration * 1.13));
     this.input.value = "";
     this.input.style.borderTopColor = "#cbd5e1";
     this.input.style.background = "#ffffff";
 
-    const nextInterval = Math.random() * 1200 + 400;
+    const nextInterval = Math.random() * (CAPTCHA_CONFIG.typing.resetMaxDelay - CAPTCHA_CONFIG.typing.resetMinDelay) + CAPTCHA_CONFIG.typing.resetMinDelay;
     await new Promise((r) => setTimeout(r, nextInterval));
     await this.refresh();
 
