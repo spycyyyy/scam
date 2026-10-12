@@ -1,29 +1,32 @@
-let wavePhase3 = 0;
+let page3Award360Image = null;
 
 function setupPage3() {
-  let c = createCanvas(700, 420);
-  c.parent('canvas-container');
+  const canvas = createCanvas(700, 420);
+  canvas.parent('canvas-container');
+
+  const imageUrl = './assests/award360.png';
+  loadImage(
+    imageUrl,
+    (loadedImage) => {
+      page3Award360Image = loadedImage;
+    },
+    (error) => console.error(`Unable to load image CAPTCHA image at ${imageUrl}.`, error)
+  );
 }
 
 function drawPage3() {
-  background(250, 250, 255);
-  stroke(94, 234, 212);
-  strokeWeight(3);
-  noFill();
+  background(255);
 
-  for (let i = 0; i < 6; i++) {
-    beginShape();
-    for (let x = 0; x <= width; x += 12) {
-      let y = height * (0.2 + i * 0.12) + sin(wavePhase3 + x * 0.03 + i) * (28 + i * 10);
-      vertex(x, y);
-    }
-    endShape();
-  }
+  if (!page3Award360Image) return;
 
-  stroke(59, 130, 246);
-  fill(191, 219, 254, 110);
-  ellipse(width * 0.78, height * 0.28, 140, 140);
-  ellipse(width * 0.25, height * 0.72, 160, 120);
-
-  wavePhase3 += 0.05;
+  const scale = Math.min(width / page3Award360Image.width, height / page3Award360Image.height);
+  const imageWidth = page3Award360Image.width * scale;
+  const imageHeight = page3Award360Image.height * scale;
+  image(
+    page3Award360Image,
+    (width - imageWidth) / 2,
+    (height - imageHeight) / 2,
+    imageWidth,
+    imageHeight
+  );
 }
