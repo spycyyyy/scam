@@ -41,7 +41,7 @@ const CAPTCHA_CONFIG = {
     allowNumbers: true,
     allowSymbols: true,
     symbolSet: "!@#$%^&*",
-    minGeneratedLength: 10,
+    minGeneratedLength: 5,
     maxGeneratedLength: 20,
     useRandomTextFallback: true,
   },

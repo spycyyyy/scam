@@ -16,12 +16,29 @@ function setup() {
     setupPage2();
   }
 
+  // Initialize Page 3-5
+  if (typeof setupPage3 === 'function') {
+    setupPage3();
+  }
+  if (typeof setupPage4 === 'function') {
+    setupPage4();
+  }
+  if (typeof setupPage5 === 'function') {
+    setupPage5();
+  }
+
   updateUI();
 }
 
 function draw() {
   if (currentPage === 'page2' && typeof drawPage2 === 'function') {
     drawPage2();
+  } else if (currentPage === 'page3' && typeof drawPage3 === 'function') {
+    drawPage3();
+  } else if (currentPage === 'page4' && typeof drawPage4 === 'function') {
+    drawPage4();
+  } else if (currentPage === 'page5' && typeof drawPage5 === 'function') {
+    drawPage5();
   }
 }
 
@@ -46,6 +63,12 @@ function reloadCurrentPage() {
     refreshAllCaptchas();
   } else if (currentPage === 'page2' && typeof setupPage2 === 'function') {
     setupPage2();
+  } else if (currentPage === 'page3' && typeof setupPage3 === 'function') {
+    setupPage3();
+  } else if (currentPage === 'page4' && typeof setupPage4 === 'function') {
+    setupPage4();
+  } else if (currentPage === 'page5' && typeof setupPage5 === 'function') {
+    setupPage5();
   }
 }
 
@@ -81,7 +104,7 @@ function updateUI() {
   } else if (currentPage === 'page1') {
     captchaView.style.display = 'block';
     noLoop();
-  } else if (currentPage === 'page2') {
+  } else if (currentPage === 'page2' || currentPage === 'page3' || currentPage === 'page4' || currentPage === 'page5') {
     canvasContainer.style.display = 'block';
     loop();
   }
