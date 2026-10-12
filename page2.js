@@ -11,25 +11,6 @@ const SLIDECAPCHA_CONFIG = {
     height: 300,
     maxAttempts: 5,
   },
-  photoEffect: {
-    palettes: {
-      blue: {
-        shadow: [8, 28, 82],
-        midtone: [35, 101, 181],
-        highlight: [226, 239, 248],
-      },
-      red: {
-        shadow: [92, 18, 32],
-        midtone: [190, 48, 64],
-        highlight: [250, 226, 211],
-      },
-    },
-    distortionAmplitude: 2,
-    distortionFrequency: 0.055,
-    halftoneSpacing: 6,
-    halftoneMaxRadius: 1.1,
-    halftoneOpacity: 0.22,
-  },
   puzzle: {
     sizeRatio: 0.18,
     minSize: 24,
@@ -72,6 +53,7 @@ let slideCapchaItems = [];
 let slideCapchaPhotoRequest = 0;
 let slideCapchaActiveDrag = null;
 let slideCapchaResizeBound = false;
+let slideCapchaResizeObserver;
 
 function slideCapchaCanvasSize() {
   const viewport = document.getElementById('main-viewport');
@@ -89,12 +71,21 @@ function setupPage2() {
   } else {
     slideCapchaCanvas = createCanvas(canvasWidth, canvasHeight);
     slideCapchaCanvas.parent('canvas-container');
-    slideCapchaCanvas.elt.style.display = 'block';
+    Object.assign(slideCapchaCanvas.elt.style, {
+      display: 'block',
+      width: '100%',
+      height: '100%',
+    });
   }
 
   if (!slideCapchaResizeBound) {
     slideCapchaResizeBound = true;
     window.addEventListener('resize', resizeSlideCapchaCanvas);
+    const viewport = document.getElementById('main-viewport');
+    if (viewport && typeof ResizeObserver !== 'undefined') {
+      slideCapchaResizeObserver = new ResizeObserver(resizeSlideCapchaCanvas);
+      slideCapchaResizeObserver.observe(viewport);
+    }
   }
 
   rebuildSlideCapchaGrid();
@@ -106,6 +97,8 @@ function resizeSlideCapchaCanvas() {
 
   const previousItemCount = slideCapchaItems.length;
   const { width: canvasWidth, height: canvasHeight } = slideCapchaCanvasSize();
+  if (canvasWidth === width && canvasHeight === height) return;
+
   resizeCanvas(canvasWidth, canvasHeight);
   rebuildSlideCapchaGrid();
   if (slideCapchaItems.length !== previousItemCount) {
@@ -152,7 +145,6 @@ function rebuildSlideCapchaGrid() {
         failureTimer: null,
         roundId: 0,
         photo: null,
-        photoPalette: null,
         photoError: null,
         crop: null,
         pieceSize: 0,
@@ -176,7 +168,6 @@ function rebuildSlideCapchaGrid() {
         item.failureStartedAt = previousItem.failureStartedAt;
         item.failureTimer = previousItem.failureTimer;
         item.roundId = previousItem.roundId;
-        item.photoPalette = previousItem.photoPalette;
       }
       prepareSlideCapchaItem(item);
       slideCapchaItems.push(item);
@@ -246,94 +237,21 @@ function loadRandomSlideCapchaPhoto(index, requestId, attempt = 1) {
       if (requestId !== slideCapchaPhotoRequest) return;
       const target = slideCapchaItems[index];
       if (!target) return;
-      try {
-        const paletteNames = Object.keys(SLIDECAPCHA_CONFIG.photoEffect.palettes);
-        const paletteName = paletteNames[Math.floor(Math.random() * paletteNames.length)];
-        target.photo = createSlideCapchaRisoPhoto(loadedPhoto, paletteName);
-        target.photoPalette = paletteName;
-        target.status = 'ready';
-        target.solved = false;
-        target.successTimer = null;
-        target.timerStartedAt = null;
-        target.solveTime = null;
-        target.challengeStartedAt = Date.now();
-        target.timeLimitMs = randomSlideCapchaTimeLimit();
-        target.failureStartedAt = null;
-        target.failureTimer = null;
-        target.roundId++;
-        prepareSlideCapchaItem(target);
-      } catch (error) {
-        retrySlideCapchaPhoto(index, requestId, attempt, error);
-      }
+      target.photo = loadedPhoto;
+      target.status = 'ready';
+      target.solved = false;
+      target.successTimer = null;
+      target.timerStartedAt = null;
+      target.solveTime = null;
+      target.challengeStartedAt = Date.now();
+      target.timeLimitMs = randomSlideCapchaTimeLimit();
+      target.failureStartedAt = null;
+      target.failureTimer = null;
+      target.roundId++;
+      prepareSlideCapchaItem(target);
     },
     (error) => retrySlideCapchaPhoto(index, requestId, attempt, error)
   );
-}
-
-function createSlideCapchaRisoPhoto(photo, paletteName) {
-  const config = SLIDECAPCHA_CONFIG.photoEffect;
-  const palette = config.palettes[paletteName];
-  const source = photo && (photo.canvas || photo.elt);
-  if (!source || !Number.isFinite(photo.width) || !Number.isFinite(photo.height) || photo.width < 1 || photo.height < 1) {
-    throw new TypeError('Loaded slide CAPTCHA photo has no drawable image source.');
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = photo.width;
-  canvas.height = photo.height;
-
-  const context = canvas.getContext('2d', { willReadFrequently: true });
-  if (!context) {
-    throw new Error('Unable to create a 2D context for the slide CAPTCHA photo.');
-  }
-
-  context.drawImage(source, 0, 0, canvas.width, canvas.height);
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const sourcePixels = imageData.data;
-  const originalPixels = new Uint8ClampedArray(sourcePixels);
-  const luminance = new Uint8Array(canvas.width * canvas.height);
-
-  for (let y = 0; y < canvas.height; y++) {
-    const rowOffset = Math.round(Math.sin(y * config.distortionFrequency) * config.distortionAmplitude);
-    for (let x = 0; x < canvas.width; x++) {
-      const sourceX = Math.max(0, Math.min(canvas.width - 1, x + rowOffset));
-      const sourceIndex = (y * canvas.width + sourceX) * 4;
-      const targetIndex = (y * canvas.width + x) * 4;
-      const lightness = (
-        originalPixels[sourceIndex] * 0.2126 +
-        originalPixels[sourceIndex + 1] * 0.7152 +
-        originalPixels[sourceIndex + 2] * 0.0722
-      ) / 255;
-      const startColor = lightness < 0.5 ? palette.shadow : palette.midtone;
-      const endColor = lightness < 0.5 ? palette.midtone : palette.highlight;
-      const amount = lightness < 0.5 ? lightness * 2 : (lightness - 0.5) * 2;
-
-      luminance[y * canvas.width + x] = 255 * (1 - lightness);
-      sourcePixels[targetIndex] = startColor[0] + (endColor[0] - startColor[0]) * amount;
-      sourcePixels[targetIndex + 1] = startColor[1] + (endColor[1] - startColor[1]) * amount;
-      sourcePixels[targetIndex + 2] = startColor[2] + (endColor[2] - startColor[2]) * amount;
-    }
-  }
-
-  context.putImageData(imageData, 0, 0);
-  context.fillStyle = `rgb(${palette.shadow.join(',')})`;
-  for (let y = 0; y < canvas.height; y += config.halftoneSpacing) {
-    for (let x = 0; x < canvas.width; x += config.halftoneSpacing) {
-      const darkness = luminance[y * canvas.width + x] / 255;
-      const radius = darkness * config.halftoneMaxRadius;
-      if (radius < 0.2) continue;
-
-      context.globalAlpha = darkness * config.halftoneOpacity;
-      context.beginPath();
-      context.arc(x, y, radius, 0, Math.PI * 2);
-      context.fill();
-    }
-  }
-  context.globalAlpha = 1;
-
-  const processedPhoto = createImage(canvas.width, canvas.height);
-  processedPhoto.drawingContext.drawImage(canvas, 0, 0);
-  return processedPhoto;
 }
 
 function retrySlideCapchaPhoto(index, requestId, attempt, error) {
