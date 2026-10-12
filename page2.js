@@ -57,9 +57,11 @@ let slideCapchaResizeObserver;
 
 function slideCapchaCanvasSize() {
   const viewport = document.getElementById('main-viewport');
+  const container = document.getElementById('canvas-container');
+  const containerVisible = container && container.clientWidth > 0 && container.clientHeight > 0;
   return {
-    width: Math.max(1, viewport ? viewport.clientWidth : windowWidth),
-    height: Math.max(1, viewport ? viewport.clientHeight : windowHeight),
+    width: Math.max(1, containerVisible ? container.clientWidth : viewport ? viewport.clientWidth : windowWidth),
+    height: Math.max(1, containerVisible ? container.clientHeight : viewport ? viewport.clientHeight : windowHeight),
   };
 }
 
@@ -85,6 +87,8 @@ function setupPage2() {
     if (viewport && typeof ResizeObserver !== 'undefined') {
       slideCapchaResizeObserver = new ResizeObserver(resizeSlideCapchaCanvas);
       slideCapchaResizeObserver.observe(viewport);
+      const container = document.getElementById('canvas-container');
+      if (container) slideCapchaResizeObserver.observe(container);
     }
   }
 
@@ -117,10 +121,7 @@ function rebuildSlideCapchaGrid() {
     layout.minRows,
     Math.floor((availableHeight + layout.gap) / (layout.tileHeight + layout.gap))
   );
-  const tileWidth = Math.min(
-    layout.tileWidth,
-    (availableWidth - layout.gap * (cols - 1)) / cols
-  );
+  const tileWidth = (availableWidth - layout.gap * (cols - 1)) / cols;
   const tileHeight = (availableHeight - layout.gap * (rows - 1)) / rows;
   const gridWidth = cols * tileWidth + (cols - 1) * layout.gap;
   const startX = (width - gridWidth) / 2;
